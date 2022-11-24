@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import InfiniteScroll from "react-infinite-scroll-component";
+import Loader from "../components/Loader.component";
 import { Profile } from "../components/Profile.component";
 
 export type TUser = {
@@ -26,15 +28,27 @@ type TCompany = {
 };
 
 function Home() {
-  const [users, setUsers] = useState([]);
+  const [pageItemCount, setPageItemCount] = useState(3);
+  const [startItem, setStartItem] = useState(0);
+
+  const [users, setUsers] = useState<TUser[]>([]);
 
   useEffect(() => {
-    fetch("https://jsonplaceholder.typicode.com/users")
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = () => {
+    const nextItemIndex = startItem + pageItemCount;
+    setStartItem(nextItemIndex);
+
+    fetch(
+      `https://jsonplaceholder.typicode.com/users?_start=${startItem}&_limit=${pageItemCount}`
+    )
       .then((data) => data.json())
       .then((data) => {
-        setUsers(data);
+        setUsers([...users, ...data]);
       });
-  }, []);
+  };
 
   return (
     <div>
@@ -42,12 +56,19 @@ function Home() {
         <h1>Welcome to Users page</h1>
       </div>
       <div className="body container">
-        {users &&
-          users.map((user: TUser) => (
-            <div key={user.id}>
-              <Profile user={user} />
-            </div>
-          ))}
+        <InfiniteScroll
+          dataLength={users.length}
+          next={fetchUsers}
+          hasMore={true}
+          loader={<Loader />}
+        >
+          {users &&
+            users.map((user: TUser) => (
+              <div key={user.id}>
+                <Profile user={user} />
+              </div>
+            ))}
+        </InfiniteScroll>
       </div>
     </div>
   );
